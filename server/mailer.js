@@ -51,7 +51,7 @@ const quoteName = (name) => `"${String(name).replace(/["\\\r\n]/g, '')}"`;
    makes every one arrive "from me to me" — which also reads as spoofing and
    lands in junk. They come from a separate address on the same (Brevo
    authenticated) domain instead, named after the customer, so the inbox
-   shows who wrote. Reply-To still points at the customer. */
+   shows who wrote. */
 function enquirySender(enquiry, company) {
   const domain = addressOf(senderFor(company)).split('@')[1];
   const address = process.env.ENQUIRY_FROM || (domain ? `website@${domain}` : addressOf(senderFor(company)));
@@ -114,6 +114,11 @@ function buildBody(enquiry, company) {
   const { headline, byline, tables, message } = sectionsFor(enquiry);
   const filled = (rows) => rows.filter(([, value]) => value);
 
+  /* There is deliberately no Reply-To header (see notifyEnquiry), so the way
+     back to the customer is this button, which opens a new email to them. */
+  const replySubject = `Re: ${enquiry.subject || (isQuote ? 'Your quote request' : 'Your enquiry')} [${enquiry.ref}]`;
+  const replyHref = `mailto:${enquiry.email}?subject=${encodeURIComponent(replySubject)}`;
+
   const textTable = (t) => [t.title.toUpperCase(), ...filled(t.rows).map(([l, v]) => `${l.padEnd(16)} ${v}`)].join('\n');
   const textMessage = message && `${message.title.toUpperCase()}\n${message.body}`;
   const text = [
@@ -124,7 +129,7 @@ function buildBody(enquiry, company) {
     ...(isQuote ? [...tables.map(textTable), textMessage] : [textMessage, ...tables.map(textTable)])
       .filter(Boolean)
       .flatMap((block) => [block, '']),
-    `Reply directly to this email to reach ${enquiry.name}.`
+    `To reply, write to ${enquiry.name} at ${enquiry.email}. The normal Reply button does not reach them.`
   ].join('\n');
 
   const heading = (title) =>
@@ -148,10 +153,13 @@ function buildBody(enquiry, company) {
     <div style="padding:22px 26px 10px">
       <div style="font-size:21px;font-weight:700;line-height:1.35">${esc(headline)}</div>
       <div style="font-size:14px;color:#11143A;opacity:.65;margin-top:6px">${esc(byline)}</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:16px"><tr>
+        <td style="background:${kind.band}"><a href="${esc(replyHref)}" style="display:inline-block;padding:11px 20px;font-size:14px;font-weight:700;color:#fff;text-decoration:none">Reply to ${esc(enquiry.name)}</a></td>
+      </tr></table>
     </div>
     ${blocks.filter(Boolean).join('')}
     <div style="margin-top:14px;padding:16px 26px;background:#F7F9FC;border-top:1px solid #EEF1F6;font-size:13px;color:#11143A;opacity:.7">
-      Reply to this email to answer ${esc(enquiry.name)} directly.
+      Use the <strong>Reply to ${esc(enquiry.name)}</strong> button above — the normal Reply button does not reach them.
     </div>
   </div>
   <div style="max-width:600px;margin:12px auto 0;font-size:11px;color:#11143A;opacity:.45;text-align:center">
@@ -173,10 +181,13 @@ export async function notifyEnquiry(enquiry) {
 
   const { text, html } = buildBody(enquiry, company);
 
+  /* No Reply-To: a customer's Gmail/Yahoo address in Reply-To under a From
+     on our domain is a classic phishing pattern (SpamAssassin
+     FREEMAIL_FORGED_REPLYTO, +2.5) and was the largest reason enquiries were
+     junked. The email carries a reply button to the customer instead. */
   await mail.sendMail({
     from: enquirySender(enquiry, company),
     to,
-    replyTo: `"${enquiry.name}" <${enquiry.email}>`,
     subject: enquiry.kind === 'quote'
       ? `Quote request: ${laneOf(enquiry) || 'shipment'} — ${enquiry.name} [${enquiry.ref}]`
       : `Contact message: ${enquiry.subject || 'general enquiry'} — ${enquiry.name} [${enquiry.ref}]`,
