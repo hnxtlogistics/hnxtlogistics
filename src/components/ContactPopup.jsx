@@ -5,8 +5,8 @@ import { useSite } from '../context/SiteContext';
 const STORAGE_KEY = 'hnxt.contactPopup.dismissedUntil';
 
 /* Pages where the popup would only repeat what the visitor is already
-   looking at, plus the private console. */
-const SUPPRESSED = ['/contact', '/quote', '/admin'];
+   looking at. */
+const SUPPRESSED = ['/contact', '/quote'];
 
 function dismissedRecently() {
   try {

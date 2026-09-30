@@ -2,22 +2,24 @@ services:
   - type: web
     name: hnxt-logistics
     runtime: docker
-    plan: starter
+    plan: free
     healthCheckPath: /api/health
     envVars:
-      - key: JWT_SECRET
-        generateValue: true
       - key: NODE_ENV
         value: production
-      - key: DATABASE_PATH
-        value: /data/site.db
       - key: PUBLIC_URL
         sync: false
-      - key: ADMIN_EMAIL
+      # Enquiries only reach anyone by email. Free instances block ports
+      # 25, 465 and 587, so use a provider that accepts 2525 (e.g. Brevo).
+      - key: SMTP_HOST
         sync: false
-      - key: ADMIN_PASSWORD
+      - key: SMTP_PORT
+        value: "2525"
+      - key: SMTP_USER
         sync: false
-    disk:
-      name: hnxt-data
-      mountPath: /data
-      sizeGB: 1
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: ENQUIRY_INBOX
+        value: info@hnxtlogistics.com

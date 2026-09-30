@@ -13,8 +13,6 @@ import { setTimeout as wait } from 'node:timers/promises';
 const PORT = Number(process.env.TEST_PORT) || 4100;
 const BASE_URL = `http://localhost:${PORT}`;
 const DB = '/tmp/hnxt-test.db';
-const ADMIN_EMAIL = 'test-admin@hnxtlogistics.test';
-const ADMIN_PASSWORD = 'test-password-1234';
 
 for (const suffix of ['', '-wal', '-shm']) {
   const path = DB + suffix;
@@ -26,15 +24,9 @@ const env = {
   NODE_ENV: 'development',
   DATABASE_PATH: DB,
   PORT: String(PORT),
-  JWT_SECRET: 'test-only-secret-not-used-in-production-abc123',
-  ADMIN_EMAIL,
-  ADMIN_PASSWORD,
   ENQUIRY_RATE_MAX: '500',
   BASE_URL
 };
-
-console.log('Seeding a temporary database…');
-spawnSync('node', ['server/seed.js'], { env, stdio: 'inherit' });
 
 console.log(`Starting a test server on ${BASE_URL}…\n`);
 const server = spawn('node', ['server/index.js'], { env, stdio: ['ignore', 'ignore', 'inherit'] });
@@ -52,13 +44,10 @@ if (!ready) {
 
 const SUITES = [
   ['End-to-end', 'scripts/e2e.mjs'],
-  ['Admin portal', 'scripts/admin-test.mjs'],
-  ['Authentication', 'scripts/auth-test.mjs'],
   ['Contact pop-up', 'scripts/popup-test.mjs'],
   ['Quote form', 'scripts/quote-test.mjs'],
   ['Cookie consent', 'scripts/cookie-test.mjs'],
-  ['Accessibility (site)', 'scripts/a11y.mjs'],
-  ['Accessibility (admin)', 'scripts/a11y-admin.mjs']
+  ['Accessibility', 'scripts/a11y.mjs']
 ];
 
 const failed = [];

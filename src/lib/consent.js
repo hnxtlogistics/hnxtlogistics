@@ -5,8 +5,8 @@
  * `hasConsent('analytics')` returns true, so adding an analytics script later
  * means calling `onConsentChange` rather than dropping a tag in index.html.
  *
- * As shipped, the site sets exactly one cookie — the admin session — which is
- * strictly necessary and therefore outside the scope of consent. The banner is
+ * As shipped, the site sets no cookies of its own; the only thing stored is
+ * this consent choice, in localStorage, which is strictly necessary. The banner is
  * worded to say that honestly rather than implying tracking that is not there.
  */
 const KEY = 'hnxt.cookieConsent';
@@ -18,7 +18,7 @@ export const CATEGORIES = [
   {
     id: 'necessary',
     label: 'Strictly necessary',
-    detail: 'Keeps the site working and holds a staff sign-in session. Cannot be switched off.',
+    detail: 'Keeps the site working and remembers your cookie choice. Cannot be switched off.',
     locked: true
   },
   {

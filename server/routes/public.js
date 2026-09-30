@@ -92,13 +92,17 @@ router.post('/enquiries', async (req, res) => {
     data.message, data.origin, data.destination, data.mode, data.weight, data.dimensions, ref
   );
 
-  /* The visitor's response never waits on SMTP, but the outcome is recorded
-     so the admin can see at a glance whether a copy actually went out. */
+  /* The visitor's response never waits on SMTP. Email is the only place an
+     enquiry is read, so when it does not go out the full enquiry is written
+     to the server log, which is where it can still be recovered from. */
+  const logUnsent = (why) =>
+    console.error(`[enquiry] ${ref} NOT emailed (${why}):`, JSON.stringify({ ...data, ref }));
   notifyEnquiry({ ...data, ref })
     .then((result) => {
       if (result?.sent) db.prepare('UPDATE enquiries SET mailed = 1 WHERE ref = ?').run(ref);
+      else logUnsent(result?.reason || 'unknown');
     })
-    .catch((err) => console.error('[mailer] notification failed:', err.message));
+    .catch((err) => logUnsent(err.message));
 
   res.status(201).json({ ok: true, ref });
 });

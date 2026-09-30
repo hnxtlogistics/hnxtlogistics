@@ -209,7 +209,7 @@
   }
   .btn-ghost-dark:hover:not(:disabled) { background: var(--color-surface-2); }
 
-  /* Field styling shared by the public forms and the admin console. */
+  /* Field styling shared by the public forms. */
   .field-label {
     display: block;
     font-family: var(--font-label);

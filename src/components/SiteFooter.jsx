@@ -134,12 +134,6 @@ export default function SiteFooter() {
       <div className="border-t border-line/10">
         <div className="shell flex flex-col gap-3 py-6 text-[13px] sm:flex-row sm:items-center sm:justify-between">
           <p>© {year} {company.legalName || company.name || 'HNXT Logistics'}. All rights reserved.</p>
-          <Link
-            to="/admin"
-            className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-content/65 transition-colors hover:text-accent-600"
-          >
-            Staff sign-in
-          </Link>
         </div>
       </div>
     </footer>

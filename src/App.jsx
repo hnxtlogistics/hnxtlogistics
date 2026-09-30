@@ -9,15 +9,11 @@ import ContactPage from './pages/ContactPage';
 import QuotePage from './pages/QuotePage';
 import PrivacyPage from './pages/PrivacyPage';
 import NotFoundPage from './pages/NotFoundPage';
-import AdminApp from './admin/AdminApp';
 
 export default function App() {
   return (
     <SiteProvider>
       <Routes>
-        {/* The admin console runs outside the marketing layout. */}
-        <Route path="/admin/*" element={<AdminApp />} />
-
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />

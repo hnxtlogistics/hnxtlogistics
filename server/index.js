@@ -2,46 +2,27 @@ import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
-import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import db from './db.js';
-import { issueSession, clearSession, verifyCredentials, requireAuth } from './auth.js';
-import { audit } from './db.js';
+import { seed } from './seed.js';
 import publicRoutes from './routes/public.js';
 import seoRoutes from './routes/seo.js';
 import { renderShell } from './render.js';
 import { LEGACY_REDIRECTS } from './seo-meta.js';
-import {
-  createResetToken, consumeResetToken, isResetTokenValid, sendResetEmail
-} from './password-reset.js';
-import adminRoutes from './routes/admin.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const distDir = resolve(here, '..', 'dist');
 const isProd = process.env.NODE_ENV === 'production';
 
-/* Fail at boot, not on the first request: a production deploy missing its
-   secret must never start and quietly 500 on every sign-in. */
-function assertConfig() {
-  if (!isProd) return;
-  const problems = [];
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < 24) {
-    problems.push('JWT_SECRET must be set to at least 24 characters.');
-  }
-  if (problems.length) {
-    console.error('\nRefusing to start — configuration is incomplete:');
-    for (const problem of problems) console.error('  · ' + problem);
-    console.error('\nGenerate a secret with:  node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"\n');
-    process.exit(1);
-  }
-}
-
-assertConfig();
+/* seed.js is the single source of site content. Reloading it on every boot
+   means an edit there goes live on the next deploy, and a host that wipes
+   its filesystem on restart (Render's free tier) comes back with the full
+   site. */
+seed({ force: true });
 
 const app = express();
 app.set('trust proxy', 1);
@@ -67,7 +48,6 @@ app.use(
 );
 app.use(compression());
 app.use(express.json({ limit: '256kb' }));
-app.use(cookieParser());
 
 const limit = (windowMs, max, message) =>
   rateLimit({ windowMs, max, standardHeaders: true, legacyHeaders: false, message: { error: message } });
@@ -76,77 +56,8 @@ app.get('/api/health', (_req, res) =>
   res.json({ ok: true, uptime: Math.round(process.uptime()), time: new Date().toISOString() })
 );
 
-/* Auth — rate limited hard, since these are the credential endpoints. */
-app.post(
-  '/api/auth/login',
-  limit(15 * 60 * 1000, 10, 'Too many sign-in attempts. Try again in 15 minutes.'),
-  (req, res) => {
-    const { email, password } = req.body ?? {};
-    const user = verifyCredentials(email, password);
-    if (!user) return res.status(401).json({ error: 'Email or password is incorrect.' });
-    issueSession(res, user);
-    audit(user.email, 'auth.login');
-    res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
-  }
-);
-
-app.post('/api/auth/logout', (req, res) => {
-  clearSession(res);
-  res.json({ ok: true });
-});
-
-app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: req.user }));
-
-/* ── Password reset ───────────────────────────────────────────────────
-   Every response is identical whether or not the address exists: a
-   different reply would turn this endpoint into a way to discover which
-   accounts are real. */
-app.post(
-  '/api/auth/forgot',
-  limit(15 * 60 * 1000, 5, 'Too many reset requests. Try again in 15 minutes.'),
-  async (req, res) => {
-    const email = String(req.body?.email || '').toLowerCase().trim();
-    const origin = process.env.PUBLIC_URL?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
-
-    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      const issued = createResetToken(email);
-      if (issued) {
-        audit(email, 'password.reset.request');
-        sendResetEmail(issued, origin).catch((err) =>
-          console.error('[password reset] could not send:', err.message)
-        );
-      }
-    }
-
-    res.json({ ok: true });
-  }
-);
-
-app.get('/api/auth/reset/check', (req, res) =>
-  res.json({ valid: isResetTokenValid(req.query.token) })
-);
-
-app.post(
-  '/api/auth/reset',
-  limit(15 * 60 * 1000, 10, 'Too many attempts. Try again in 15 minutes.'),
-  (req, res) => {
-    const { token, password } = req.body ?? {};
-    if (typeof password !== 'string' || password.length < 10) {
-      return res.status(400).json({ error: 'Use at least 10 characters.' });
-    }
-    const result = consumeResetToken(token, password);
-    if (!result.ok) return res.status(400).json({ error: result.error });
-    res.json({ ok: true });
-  }
-);
-
 /* Crawler files are generated from the database, not served as static assets. */
 app.use('/', seoRoutes);
-
-/* Admin routes mount first and carry their own, roomier budget. Mounting
-   them under the public limiter would count every keystroke-driven save
-   against a 30/min visitor allowance and lock staff out mid-edit. */
-app.use('/api/admin', limit(60 * 1000, 300, 'Too many requests. Wait a moment and retry.'), adminRoutes);
 
 /* Reads are generous — office and mobile-carrier NAT put many genuine
    visitors behind one IP. Writes stay tight, because that is the endpoint

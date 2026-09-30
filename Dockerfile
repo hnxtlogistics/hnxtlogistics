@@ -20,9 +20,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY server ./server
 COPY --from=build /app/dist ./dist
 
-# The database lives on a mounted volume so content survives redeploys.
+# The database is rebuilt from seed.js on every boot, so it needs no
+# persistent volume — a wiped filesystem loses nothing.
 ENV DATABASE_PATH=/data/site.db
-VOLUME /data
 
 RUN addgroup -S app && adduser -S app -G app && mkdir -p /data && chown -R app:app /data /app
 USER app

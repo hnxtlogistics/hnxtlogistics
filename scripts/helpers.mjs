@@ -24,3 +24,17 @@ export async function preAcceptCookies(context, baseUrl) {
   });
   return context;
 }
+
+/**
+ * Enquiries as stored by the server under test. There is no inbox UI, so
+ * suites check submissions against the database the server was started on.
+ */
+export async function readEnquiries() {
+  const { DatabaseSync } = await import('node:sqlite');
+  const db = new DatabaseSync(process.env.DATABASE_PATH, { readOnly: true });
+  try {
+    return db.prepare('SELECT * FROM enquiries ORDER BY id').all();
+  } finally {
+    db.close();
+  }
+}

@@ -16,15 +16,6 @@ db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 
 db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    email         TEXT NOT NULL UNIQUE,
-    name          TEXT NOT NULL,
-    password_hash TEXT NOT NULL,
-    role          TEXT NOT NULL DEFAULT 'admin',
-    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
   CREATE TABLE IF NOT EXISTS content (
     key        TEXT PRIMARY KEY,
     value      TEXT NOT NULL,
@@ -79,25 +70,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_enquiries_created ON enquiries (created_at DESC);
   CREATE INDEX IF NOT EXISTS idx_enquiries_status  ON enquiries (status);
   CREATE INDEX IF NOT EXISTS idx_services_order    ON services (sort_order);
-
-  CREATE TABLE IF NOT EXISTS password_resets (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash TEXT NOT NULL UNIQUE,
-    expires_at TEXT NOT NULL,
-    used_at    TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_resets_hash ON password_resets (token_hash);
-
-  CREATE TABLE IF NOT EXISTS audit_log (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT NOT NULL DEFAULT 'system',
-    action     TEXT NOT NULL,
-    entity     TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
 `);
 
 /* Additive migrations for databases created before a column existed. */
@@ -134,14 +106,6 @@ export function setContent(key, value) {
   ).run(key, JSON.stringify(value));
   bumpContentVersion();
   return value;
-}
-
-export function audit(userEmail, action, entity = '') {
-  db.prepare('INSERT INTO audit_log (user_email, action, entity) VALUES (?, ?, ?)').run(
-    userEmail,
-    action,
-    entity
-  );
 }
 
 export default db;

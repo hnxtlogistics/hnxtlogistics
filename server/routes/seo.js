@@ -14,8 +14,8 @@ const escapeXml = (value) =>
     ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[char])
   );
 
-/* Generated from the database, so a service the admin adds or unpublishes
-   is reflected without anyone editing a static file. */
+/* Generated from the services table, so the sitemap always matches the
+   services listed in seed.js. */
 router.get('/sitemap.xml', (req, res) => {
   const base = origin(req);
   const services = db
@@ -49,7 +49,7 @@ router.get('/sitemap.xml', (req, res) => {
 
 router.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(
-    `User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ${origin(req)}/sitemap.xml\n`
+    `User-agent: *\nAllow: /\n\nSitemap: ${origin(req)}/sitemap.xml\n`
   );
 });
 

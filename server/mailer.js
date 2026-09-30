@@ -4,7 +4,7 @@ import { getContent } from './db.js';
 let transport = null;
 let announced = false;
 
-export function mailerStatus() {
+function mailerStatus() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
   const configured = Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
   return {
@@ -21,7 +21,7 @@ function getTransport() {
   const status = mailerStatus();
   if (!status.configured) {
     if (!announced) {
-      console.log('[mailer] SMTP not configured — enquiries are stored in the database only.');
+      console.warn('[mailer] SMTP not configured — enquiries will NOT reach anyone. Set SMTP_HOST, SMTP_USER and SMTP_PASS.');
       announced = true;
     }
     return null;
@@ -33,18 +33,6 @@ function getTransport() {
     auth: { user: status.user, pass: process.env.SMTP_PASS }
   });
   return transport;
-}
-
-export async function verifyTransport() {
-  const mail = getTransport();
-  if (!mail) return { ok: false, error: 'SMTP is not configured on the server.' };
-  try {
-    await mail.verify();
-    return { ok: true };
-  } catch (err) {
-    transport = null; // force a rebuild next attempt
-    return { ok: false, error: err.message };
-  }
 }
 
 const SCOPE_LABEL = { domestic: 'Within India', international: 'International' };
@@ -90,7 +78,7 @@ function buildBody(enquiry, company) {
         <div style="white-space:pre-wrap;line-height:1.6">${esc(enquiry.message)}</div></td></tr>` : ''}
     </table>
     <div style="padding:16px 26px;background:#F7F9FC;border-top:1px solid #EEF1F6;font-size:13px;color:#11143A;opacity:.7">
-      Reply to this email to answer ${esc(enquiry.name)} directly. This enquiry is also saved in your admin console.
+      Reply to this email to answer ${esc(enquiry.name)} directly.
     </div>
   </div>
   <div style="max-width:600px;margin:12px auto 0;font-size:11px;color:#11143A;opacity:.45;text-align:center">
@@ -122,19 +110,6 @@ export async function notifyEnquiry(enquiry) {
     html
   });
   return { sent: true };
-}
-
-/** Generic send. Returns false when SMTP is not configured. */
-export async function sendMail({ to, subject, text, html, replyTo }) {
-  const mail = getTransport();
-  if (!mail || !to) return false;
-  const company = getContent('company', {});
-  await mail.sendMail({
-    from: process.env.SMTP_FROM || `"${company.name || 'Website'}" <${process.env.SMTP_USER}>`,
-    to, subject, text, html,
-    ...(replyTo && { replyTo })
-  });
-  return true;
 }
 
 export async function sendTestEmail(to) {

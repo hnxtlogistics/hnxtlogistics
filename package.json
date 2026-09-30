@@ -15,22 +15,17 @@
     "test:e2e": "node scripts/e2e.mjs",
     "test:popup": "node scripts/popup-test.mjs",
     "test:quote": "node scripts/quote-test.mjs",
-    "test:a11y": "node scripts/a11y.mjs && node scripts/a11y-admin.mjs",
+    "test:a11y": "node scripts/a11y.mjs",
     "test": "node scripts/run-tests.mjs",
-    "admin:set": "node scripts/set-admin.mjs",
     "test:cookies": "node scripts/cookie-test.mjs",
-    "test:admin": "node scripts/admin-test.mjs",
-    "test:auth": "node scripts/auth-test.mjs"
+    "mail:test": "node scripts/mail-test.mjs"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
-    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
     "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.3",
     "nodemailer": "^9.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -46,7 +41,7 @@
     "tailwindcss": "^4.3.3",
     "vite": "^5.4.2"
   },
-  "description": "Official website and content management platform for HNXT Logistics.",
+  "description": "Official website for HNXT Logistics.",
   "engines": {
     "node": ">=22.5.0"
   }

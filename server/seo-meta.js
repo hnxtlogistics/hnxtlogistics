@@ -110,12 +110,6 @@ export function metaForPath(pathname, origin) {
     jsonLd: []
   };
 
-  // The console is private and must never be indexed.
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return { ...base, status: 200, robots: 'noindex, nofollow', canonical: null,
-             title: `${brand}Staff sign-in`, description: '' };
-  }
-
   if (pathname === '/') {
     const faqs = db.prepare('SELECT question, answer FROM faqs WHERE published = 1 ORDER BY sort_order LIMIT 10').all();
     return {

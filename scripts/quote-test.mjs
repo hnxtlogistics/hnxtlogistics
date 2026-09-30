@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { chromium } from 'playwright';
-import { dismissCookies } from './helpers.mjs';
+import { dismissCookies, readEnquiries } from './helpers.mjs';
 const B = process.env.BASE_URL || 'http://localhost:4000';
 const fails = [];
 const check = (l, ok) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${l}`); if (!ok) fails.push(l); };
@@ -162,22 +162,17 @@ await intl.click('button[type=submit]');
 await intl.waitForTimeout(1400);
 check('international quote submits', (await intl.textContent('body')).includes('Enquiry received'));
 
-// It reaches the admin inbox with the districts intact
-const admin = await browser.newPage();
-await admin.goto(`${B}/admin`, { waitUntil: 'networkidle' });
-await dismissCookies(admin);
-await admin.fill('#field-email', process.env.ADMIN_EMAIL);
-await admin.fill('#field-password', process.env.ADMIN_PASSWORD);
-await admin.click('button[type=submit]');
-await admin.waitForTimeout(1300);
-const inbox = await admin.textContent('body');
-check('admin signs in with the new credentials', inbox.includes('Enquiries'));
-check('enquiry visible in admin inbox', inbox.includes('District Picker Test'));
-check('lane shows both districts', /Bengaluru.*→.*Kolkata/s.test(inbox));
-check('international enquiry listed', inbox.includes('Intl Scope Test'));
-check('scope badge shown in inbox', /INTL/.test(inbox) && /DOMESTIC/.test(inbox));
-check('inter-state enquiry listed', inbox.includes('Inter State Test'));
-check('inter-state lane recorded', /Bengaluru Urban, Karnataka.*→.*Pune, Maharashtra/s.test(inbox));
+// It is stored with the districts intact
+await intl.waitForTimeout(300);
+const stored = await readEnquiries();
+const byName = (name) => stored.find((e) => e.name === name);
+const lane = (e) => (e ? `${e.origin} → ${e.destination}` : '');
+check('enquiry stored', Boolean(byName('District Picker Test')));
+check('lane keeps both districts', /Bengaluru.*→.*Kolkata/s.test(lane(byName('District Picker Test'))));
+check('international enquiry stored', byName('Intl Scope Test')?.scope === 'international');
+check('domestic scope recorded', byName('District Picker Test')?.scope === 'domestic');
+check('inter-state enquiry stored', Boolean(byName('Inter State Test')));
+check('inter-state lane recorded', /Bengaluru Urban, Karnataka.*→.*Pune, Maharashtra/s.test(lane(byName('Inter State Test'))));
 
 await browser.close();
 console.log(fails.length ? `\n${fails.length} FAILED` : '\nAll quote-form checks passed');

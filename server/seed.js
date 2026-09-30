@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import db, { setContent, getContent } from './db.js';
 
 const company = {
@@ -117,7 +118,7 @@ const faqs = [
   ['Where are you based?', 'Our office is at No. 28, 1st Cross, Kalkere Main Road, Ramamurthy Nagar, Bengaluru 560016. We operate pan-India lanes from there and handle international freight through port and airport partners.']
 ];
 
-function seed({ force = false } = {}) {
+export function seed({ force = false } = {}) {
   const has = (key) => getContent(key) !== null;
 
   if (force || !has('company')) setContent('company', company);
@@ -144,20 +145,9 @@ function seed({ force = false } = {}) {
     faqs.forEach(([q, a], i) => insert.run(q, a, i));
   }
 
-  const userCount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
-  if (userCount === 0) {
-    const email = process.env.ADMIN_EMAIL || 'admin@hnxtlogistics.com';
-    const password = process.env.ADMIN_PASSWORD || 'ChangeMe!2026';
-    db.prepare('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)').run(
-      email.toLowerCase(),
-      process.env.ADMIN_NAME || 'Site Administrator',
-      bcrypt.hashSync(password, 12),
-      'owner'
-    );
-    console.log(`\n  Admin account created\n  ─────────────────────\n  Email:    ${email}\n  Password: ${password}\n  Change this password after first sign-in.\n`);
-  }
-
   console.log('Seed complete.');
 }
 
-seed({ force: process.argv.includes('--force') });
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  seed({ force: process.argv.includes('--force') });
+}
