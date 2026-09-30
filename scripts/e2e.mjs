@@ -60,7 +60,7 @@ try {
   await visitor.click('button[type=submit]');
   await visitor.waitForTimeout(1200);
   const receipt = await visitor.textContent('body');
-  const ref = receipt.match(/HNXT-\d{5}/)?.[0];
+  const ref = receipt.match(/HNXT-\d{6}-[A-Z0-9]{4}/)?.[0];
   check('quote submits and returns a reference', receipt.includes('Enquiry received') && Boolean(ref));
 
   // 4. It is stored under that reference with the lane.

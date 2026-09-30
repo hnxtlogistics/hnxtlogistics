@@ -115,7 +115,7 @@ password.
 
 The email is sent after the visitor's confirmation, so a mail failure is
 never shown to the customer. When one fails, the whole enquiry is written to
-the server log as `[enquiry] HNXT-12345 NOT emailed (…)`, which is where it
+the server log as `[enquiry] HNXT-261001-7K3F NOT emailed (…)`, which is where it
 can be recovered from. Enquiries are also written to the SQLite `enquiries`
 table, but on a host without a persistent disk that is lost on restart.
 

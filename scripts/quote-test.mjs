@@ -60,7 +60,7 @@ await page.fill('#field-email', 'ops@districttest.example');
 await page.click('button[type=submit]');
 await page.waitForTimeout(1400);
 const body = await page.textContent('body');
-check('quote submits with district values', body.includes('Enquiry received') && /HNXT-\d{5}/.test(body));
+check('quote submits with district values', body.includes('Enquiry received') && /HNXT-\d{6}-[A-Z0-9]{4}/.test(body));
 check('mobile number field present and required', await page.locator('#field-phone').count() === 0 || true);
 
 // Inter-state: each end must hold its own state independently

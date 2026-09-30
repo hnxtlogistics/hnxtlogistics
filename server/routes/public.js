@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import db, { getContent } from '../db.js';
@@ -46,9 +47,17 @@ const enquirySchema = z.object({
   website: z.string().max(0).optional().default('')
 });
 
+/* The database is wiped on every redeploy (Render free plan, no disk), so a
+   running count restarts at 1 and hands out the same reference twice. A date
+   plus a random code never repeats in practice: HNXT-261001-7K3F. The code
+   skips 0/O, 1/I/L so it can be read out over the phone. */
+const REF_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+
 function makeRef() {
-  const n = db.prepare('SELECT COUNT(*) AS n FROM enquiries').get().n + 1;
-  return `HNXT-${String(n).padStart(5, '0')}`;
+  const ist = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString();
+  const date = ist.slice(2, 10).replace(/-/g, '');
+  const code = Array.from(randomBytes(4), (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join('');
+  return `HNXT-${date}-${code}`;
 }
 
 router.post('/enquiries', async (req, res) => {
