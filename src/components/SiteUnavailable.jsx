@@ -15,7 +15,7 @@ export default function SiteUnavailable({ onRetry }) {
         </p>
         <div className="mt-9 flex flex-wrap gap-4">
           <button type="button" onClick={onRetry} className="btn btn-accent">Try again</button>
-          <a href="mailto:hnxtlogistics@gmail.com" className="btn btn-ghost-light">
+          <a href="mailto:info@hnxtlogistics.com" className="btn btn-ghost-light">
             Email us
           </a>
         </div>

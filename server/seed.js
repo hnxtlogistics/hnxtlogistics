@@ -7,7 +7,9 @@ const company = {
   name: 'HNXT Logistics',
   legalName: 'HNXT Logistics',
   tagline: 'Freight that keeps its promises',
-  email: 'hnxtlogistics@gmail.com',
+  email: 'info@hnxtlogistics.com',
+  // Shown only in the contact popup and the footer.
+  secondaryEmail: 'hnxtlogistics@gmail.com',
   phone: '',
   whatsapp: '',
   addressLine1: 'No. 28, 1st Cross, Kalkere Main Road',

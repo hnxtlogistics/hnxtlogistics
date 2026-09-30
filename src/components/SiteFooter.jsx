@@ -96,10 +96,10 @@ export default function SiteFooter() {
                 WhatsApp
               </a>
             )}
-            {company.email && (
-              <a href={`mailto:${company.email}`} className="flex items-start gap-3 break-all transition-colors hover:text-accent-600">
+            {(company.secondaryEmail || company.email) && (
+              <a href={`mailto:${company.secondaryEmail || company.email}`} className="flex items-start gap-3 break-all transition-colors hover:text-accent-600">
                 <Icon name="mail" size={17} className="mt-0.5 text-accent-600" />
-                {company.email}
+                {company.secondaryEmail || company.email}
               </a>
             )}
             {company.hours && (
