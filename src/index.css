@@ -1,0 +1,303 @@
+@import 'tailwindcss';
+
+/* ─────────────────────────────────────────────────────────────────────
+   HNXT Logistics — design tokens
+   Indigo, azure and neutral grey, taken from the company logo, with a
+   light and a dark theme built from the same three colours.
+   ───────────────────────────────────────────────────────────────────── */
+@theme {
+  /* ── Palette sampled from the logo ──────────────────────────────────
+     The wordmark is indigo (#303060), the globe arc and boat are azure
+     (#0090d8), the sub-line is neutral grey. The site is built from
+     those three so the mark reads as the origin of the system.
+
+     Two groups of tokens:
+     · chrome  (canvas / surface / content / line) flips with the theme
+     · brand   (brand / on-brand) stays dark in both, the way a photo does,
+               so the hero and lane board keep their identity at night. */
+
+  /* Chrome — light values; the dark overrides are below @theme. */
+  --color-canvas: #F2F4F8;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #E9EDF4;
+  --color-content: #11143A;
+  --color-line: #11143A;
+  --color-field: #FFFFFF;
+  --color-field-line: #C4CCDA;
+
+  /* Brand blocks — fixed. */
+  --color-brand: #0A0C28;
+  --color-brand-2: #11143A;
+  --color-on-brand: #F5F7FB;
+
+  /* Indigo scale, still used for the logo-derived brand furniture. */
+  --color-ink-950: #0A0C28;
+  --color-ink-900: #11143A;
+  --color-ink-800: #1B1F55;
+  --color-ink-700: #2C2E6B;
+  --color-ink-600: #454890;
+
+  --color-paper-50:  #FFFFFF;
+  --color-paper-100: #F2F4F8;
+  --color-paper-200: #E2E7EF;
+  --color-paper-300: #C4CCDA;
+
+  /* Azure lifted straight from the globe arc. Carries every action. */
+  --color-accent-400: #4FC3F7;
+  --color-accent-500: #0090D8;
+  --color-accent-600: #0075B0;
+  --color-accent-700: #005E8E;
+
+  --color-beacon: #F59E0B;
+  --color-sea: #0F766E;
+
+  /* Transport modes. Two sets: one that follows the theme for tags on
+     ordinary surfaces, and a fixed bright set for tags sitting on the
+     always-dark brand blocks. */
+  --color-mode-road: #A8480A;
+  --color-mode-air: #005E8E;
+  --color-mode-sea: #0F766E;
+  --color-mode-multi: #475569;
+
+  --color-mode-road-lit: #F2A65A;
+  --color-mode-air-lit: #7DD3FC;
+  --color-mode-sea-lit: #4DD4C4;
+  --color-mode-multi-lit: #A9B6C9;
+
+  --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Labels, eyebrows, codes and data. A monospace face was the wrong tool
+     here — the even widths that help in a code editor read as weak and
+     mechanical in an interface. Space Grotesk is a geometric sans with
+     genuine weight and tight, confident forms. */
+  --font-label: 'Space Grotesk', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --text-hero: clamp(2.75rem, 7.5vw, 6rem);
+  --text-display: clamp(2rem, 4.6vw, 3.5rem);
+  --text-title: clamp(1.5rem, 2.6vw, 2.125rem);
+
+  --radius-card: 4px;
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  color-scheme: light;
+}
+
+
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-content);
+    transition: background-color 0.25s ease, color 0.25s ease;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Display face is set wide — container and trailer lettering is
+     stretched to fill the panel, and the headings borrow that. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-variation-settings: 'wdth' 112;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  p { text-wrap: pretty; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-accent-500);
+    color: #fff;
+  }
+
+  img { max-width: 100%; height: auto; display: block; }
+}
+
+@layer components {
+  .shell {
+    width: 100%;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 3rem);
+  }
+
+  /* Eyebrow: reads like a docket field label. */
+  .eyebrow {
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .rule {
+    height: 1px;
+    background: currentColor;
+    opacity: 0.16;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0.9375rem 1.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-card);
+    font-family: var(--font-display);
+    font-variation-settings: 'wdth' 106;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.2s var(--ease-out-quint);
+  }
+
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .btn-accent {
+    background: var(--color-accent-500);
+    color: #06081A;
+  }
+  .btn-accent:hover:not(:disabled) { background: var(--color-accent-600); }
+
+  .btn-ink {
+    background: var(--color-content);
+    color: var(--color-surface);
+  }
+  .btn-ink:hover:not(:disabled) { background: color-mix(in srgb, var(--color-content) 82%, var(--color-accent-500)); }
+
+  .btn-ghost-light {
+    border-color: color-mix(in srgb, var(--color-on-brand) 34%, transparent);
+    color: var(--color-on-brand);
+  }
+  .btn-ghost-light:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-on-brand) 12%, transparent);
+    border-color: var(--color-on-brand);
+  }
+
+  .btn-ghost-dark {
+    border-color: color-mix(in srgb, var(--color-content) 30%, transparent);
+    color: var(--color-content);
+  }
+  .btn-ghost-dark:hover:not(:disabled) { background: var(--color-surface-2); }
+
+  /* Field styling shared by the public forms and the admin console. */
+  .field-label {
+    display: block;
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    opacity: 0.85;
+  }
+
+  /* Reference numbers, lane codes and timestamps line up in columns. */
+  .tabular {
+    font-family: var(--font-label);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .field-input {
+    width: 100%;
+    padding: 0.8125rem 0.9375rem;
+    background: var(--color-field);
+    border: 1px solid var(--color-field-line);
+    border-radius: var(--radius-card);
+    color: var(--color-content);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+
+  .field-input::placeholder { color: color-mix(in srgb, var(--color-content) 45%, transparent); }
+
+  .field-input:focus {
+    outline: none;
+    border-color: var(--color-accent-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-500) 18%, transparent);
+  }
+
+  .field-input[aria-invalid='true'] {
+    border-color: var(--color-accent-600);
+    background: color-mix(in srgb, var(--color-accent-500) 7%, var(--color-field));
+  }
+
+  textarea.field-input { resize: vertical; min-height: 7rem; line-height: 1.6; }
+  select.field-input { appearance: none; background-image: none; }
+}
+
+/* ── Signature: the lane manifest ──────────────────────────────────────
+   A departures-board strip of live lanes. It is the one moving element
+   on the page; everything else stays still.                            */
+.lane-marquee {
+  display: flex;
+  width: max-content;
+  animation: lane-scroll 44s linear infinite;
+}
+
+.lane-marquee:hover { animation-play-state: paused; }
+
+@keyframes lane-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+/* Reveal-on-scroll, applied via IntersectionObserver. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s var(--ease-out-quint), transform 0.7s var(--ease-out-quint);
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .lane-marquee { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .reveal { opacity: 1 !important; transform: none !important; }
+  .lane-marquee { animation: none; }
+}
+
+@keyframes popup-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
