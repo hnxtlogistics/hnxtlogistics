@@ -35,183 +35,103 @@ function getTransport() {
   return transport;
 }
 
+const SCOPE_LABEL = { domestic: 'Within India', international: 'International' };
+const MODE_LABEL = { ROAD: 'Road freight', AIR: 'Air freight', SEA: 'Sea freight', MULTI: 'Multi-modal' };
+
 const esc = (v = '') =>
   String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-/* The email is laid out as the form the visitor filled in — same headings,
-   labels, hints and order — with their answers in the boxes. Empty optional
-   fields keep the form's placeholder, greyed, so it is obvious they were
-   left blank rather than lost. Keep this in step with EnquiryForm.jsx. */
-
-const SCOPES = [
-  { value: 'domestic', label: 'Within India', detail: 'District to district' },
-  { value: 'international', label: 'International', detail: 'Import or export' }
-];
-
-const MODE_LABEL = {
-  '': 'Not sure — advise me', ROAD: 'Road freight', AIR: 'Air freight', SEA: 'Sea freight', MULTI: 'Multi-modal'
+/* Quotes and contact messages land in the same inbox, so each kind has its
+   own colour, heading and layout: a quote leads with the lane and the
+   shipment, a contact message leads with what the person wrote. */
+const KINDS = {
+  quote: { label: 'Quote request', band: '#0090D8', tint: '#E6F4FB' },
+  contact: { label: 'Contact message', band: '#11143A', tint: '#EEF0F7' }
 };
 
-/** Describes the form as a list of sections; both the HTML and text bodies render from it. */
-function describeForm(e) {
-  const isQuote = e.kind === 'quote';
-  const f = (label, value, opts = {}) => ({ label, value: value || '', ...opts });
+const laneOf = (e) => (e.origin && e.destination ? `${e.origin} → ${e.destination}` : '');
 
-  const details = {
-    legend: isQuote ? 'Your details' : 'Contact details',
-    rows: [
-      [f('Your name', e.name, { required: true }), f('Email', e.email, { required: true })],
-      [
-        f('Mobile number', e.phone, { required: true, hint: 'So we can call you back about the shipment' }),
-        f('Company', e.company)
-      ],
-      ...(isQuote ? [] : [[f('Subject', e.subject, { placeholder: 'What is this about?' })]]),
-      [
-        f(isQuote ? 'Anything else we should know' : 'Message', e.message, {
-          required: !isQuote,
-          multiline: true,
-          placeholder: isQuote ? 'Cargo type, handling requirements, target delivery date…' : 'Tell us what you need moved.'
-        })
-      ]
-    ]
+function sectionsFor(e) {
+  const customer = {
+    title: 'Customer',
+    rows: [['Name', e.name], ['Email', e.email], ['Phone', e.phone], ['Company', e.company]]
   };
-  if (!isQuote) return [details];
-
-  const domestic = e.scope !== 'international';
-  const end = (title, state, district) => ({
-    title,
-    rows: [
-      [f('State', state, { placeholder: 'Start typing a state', hint: 'Optional — narrows the districts below' })],
-      [f('District', district, {
-        required: true,
-        placeholder: 'Start typing a district',
-        hint: state ? `Districts in ${state}` : 'District or city in India'
-      })]
-    ]
-  });
-
-  const shipment = {
-    legend: 'Shipment',
-    boxed: true,
-    scope: e.scope || 'domestic',
-    ends: domestic
-      ? [end('Collected from', e.originState, e.origin), end('Delivered to', e.destinationState, e.destination)]
-      : null,
-    rows: [
-      ...(domestic ? [] : [[
-        f('Collected from', e.origin, { required: true, placeholder: 'Start typing a country', hint: 'Country of origin' }),
-        f('Delivered to', e.destination, { required: true, placeholder: 'Start typing a country', hint: 'Destination country' })
-      ]]),
-      [
-        f('Total weight', e.weight, { placeholder: 'e.g. 850 kg' }),
-        f('Dimensions', e.dimensions, { placeholder: 'e.g. 120 × 80 × 90 cm' })
-      ],
-      [f('Preferred mode', MODE_LABEL[e.mode] ?? e.mode, { select: true })]
-    ]
-  };
-  return [shipment, details];
-}
-
-const INK = '#11143A';
-const ACCENT = '#0090D8';
-const MUTED = 'color:#11143A;opacity:.62';
-
-function htmlField(field) {
-  const empty = !field.value;
-  const shown = empty ? field.placeholder || '' : field.value;
-  return `<div style="font-size:12px;font-weight:600;letter-spacing:.02em;margin-bottom:6px;color:${INK}">${esc(field.label)}${
-    field.required ? ` <span style="color:${ACCENT}">*</span>` : ''}</div>
-    <div style="border:1px solid #CBD3DF;background:#fff;padding:10px 12px;font-size:14px;line-height:1.5;${
-      field.multiline ? 'min-height:72px;white-space:pre-wrap;' : ''}${empty ? 'color:#9AA3B2;' : `color:${INK};`}word-break:break-word">${
-      esc(shown) || '&nbsp;'}${field.select ? '<span style="float:right;color:#9AA3B2">&#9662;</span>' : ''}</div>
-    ${field.hint ? `<div style="font-size:12px;margin-top:5px;${MUTED}">${esc(field.hint)}</div>` : ''}`;
-}
-
-function htmlRows(rows) {
-  return rows.map((row) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px"><tr>${
-    row.map((field, i) => `<td valign="top" style="${row.length > 1 ? 'width:50%;' : ''}${i > 0 ? 'padding-left:16px;' : ''}">${htmlField(field)}</td>`).join('')
-  }</tr></table>`).join('');
-}
-
-function htmlScope(selected) {
-  return `<div style="font-size:12px;font-weight:600;margin-bottom:8px;color:${INK}">Type of shipment</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px"><tr>${
-    SCOPES.map((o, i) => {
-      const on = o.value === selected;
-      return `<td valign="top" style="width:50%;${i > 0 ? 'padding-left:12px;' : ''}">
-        <div style="border:1px solid ${on ? ACCENT : '#CBD3DF'};background:${on ? '#E6F4FB' : '#fff'};padding:12px 14px">
-          <span style="font-size:15px;color:${on ? ACCENT : '#9AA3B2'}">${on ? '&#9673;' : '&#9675;'}</span>
-          <span style="font-size:14px;font-weight:600;color:${INK};padding-left:6px">${o.label}</span>
-          <div style="font-size:12px;padding-left:22px;margin-top:2px;${MUTED}">${o.detail}</div>
-        </div></td>`;
-    }).join('')
-  }</tr></table>`;
-}
-
-function htmlSection(section) {
-  const legend = `<div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:16px;${MUTED}">${esc(section.legend)}</div>`;
-  const ends = section.ends
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px"><tr>${
-      section.ends.map((end, i) => `<td valign="top" style="width:50%;${i > 0 ? 'padding-left:16px;' : ''}">
-        <div style="border:1px solid #E2E7EF;background:#FAFBFD;padding:14px 14px 0">
-          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;${MUTED}">${end.title}</div>
-          ${htmlRows(end.rows)}
-        </div></td>`).join('')
-    }</tr></table>`
-    : '';
-  const body = `${legend}${section.scope ? htmlScope(section.scope) : ''}${ends}${htmlRows(section.rows)}`;
-  return section.boxed
-    ? `<div style="border:1px solid #E2E7EF;background:#F7F9FC;padding:20px 20px 4px;margin-bottom:24px">${body}</div>`
-    : `<div style="margin-bottom:6px">${body}</div>`;
-}
-
-function textSection(section) {
-  const line = (field) => {
-    const label = `${field.label}${field.required ? ' *' : ''}`;
-    const value = field.value || '—';
-    return field.multiline ? `${label}\n${value}` : `${label.padEnd(30)} ${value}`;
-  };
-  const out = [section.legend.toUpperCase()];
-  if (section.scope) {
-    out.push(`Type of shipment               ${SCOPES.map((o) => `${o.value === section.scope ? '(•)' : '( )'} ${o.label}`).join('   ')}`);
+  if (e.kind !== 'quote') {
+    return {
+      headline: e.subject || 'General enquiry',
+      byline: `From ${e.name}${e.company ? ` · ${e.company}` : ''}`,
+      message: { title: 'Message', body: e.message },
+      tables: [customer]
+    };
   }
-  for (const end of section.ends || []) {
-    out.push('', `  ${end.title}`, ...end.rows.flat().map((field) => `  ${line(field)}`));
-  }
-  if (section.ends) out.push('');
-  out.push(...section.rows.flat().map(line));
-  return out.join('\n');
+  return {
+    headline: laneOf(e) || 'Shipment quote',
+    byline: `Requested by ${e.name}${e.company ? ` · ${e.company}` : ''}`,
+    tables: [
+      {
+        title: 'Shipment',
+        rows: [
+          ['Shipment type', SCOPE_LABEL[e.scope]],
+          ['Collected from', e.origin],
+          ['Delivered to', e.destination],
+          ['Total weight', e.weight],
+          ['Dimensions', e.dimensions],
+          ['Preferred mode', MODE_LABEL[e.mode] || e.mode || 'Not sure — advise me']
+        ]
+      },
+      customer
+    ],
+    message: e.message ? { title: 'Anything else we should know', body: e.message } : null
+  };
 }
 
-export function buildBody(enquiry, company) {
+function buildBody(enquiry, company) {
+  const kind = KINDS[enquiry.kind] || KINDS.contact;
   const isQuote = enquiry.kind === 'quote';
-  const title = isQuote ? 'Price a shipment' : 'Send us a message';
-  const sections = describeForm(enquiry);
+  const { headline, byline, tables, message } = sectionsFor(enquiry);
+  const filled = (rows) => rows.filter(([, value]) => value);
 
+  const textTable = (t) => [t.title.toUpperCase(), ...filled(t.rows).map(([l, v]) => `${l.padEnd(16)} ${v}`)].join('\n');
+  const textMessage = message && `${message.title.toUpperCase()}\n${message.body}`;
   const text = [
-    `${isQuote ? 'New quote request' : 'New message'} — ${enquiry.ref}`,
-    title,
+    `${kind.label.toUpperCase()} — ${enquiry.ref}`,
+    headline,
+    byline,
     '',
-    sections.map(textSection).join('\n\n'),
-    '',
+    ...(isQuote ? [...tables.map(textTable), textMessage] : [textMessage, ...tables.map(textTable)])
+      .filter(Boolean)
+      .flatMap((block) => [block, '']),
     `Reply directly to this email to reach ${enquiry.name}.`
   ].join('\n');
 
-  const html = `<!doctype html><html><body style="margin:0;background:#F2F4F8;padding:24px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:${INK}">
-  <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #E2E7EF">
-    <div style="border-top:4px solid ${ACCENT};padding:22px 28px 0">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#0075B0">${isQuote ? 'New quote request' : 'New message'}</td>
-        <td align="right" style="font-family:ui-monospace,monospace;font-size:12px;${MUTED}">${esc(enquiry.ref)}</td>
-      </tr></table>
-      <div style="font-size:22px;font-weight:700;margin-top:10px">${title}</div>
+  const heading = (title) =>
+    `<div style="padding:18px 26px 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#11143A;opacity:.55">${esc(title)}</div>`;
+  const htmlTable = (t) => `${heading(t.title)}
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      ${filled(t.rows).map(([label, value]) => `<tr>
+        <td style="padding:10px 26px;border-top:1px solid #EEF1F6;color:#11143A;opacity:.6;white-space:nowrap;width:150px">${label}</td>
+        <td style="padding:10px 26px;border-top:1px solid #EEF1F6">${esc(value)}</td></tr>`).join('')}
+    </table>`;
+  const htmlMessage = message && `${heading(message.title)}
+    <div style="margin:0 26px 8px;padding:14px 16px;background:${kind.tint};border-left:3px solid ${kind.band};white-space:pre-wrap;line-height:1.6;font-size:15px">${esc(message.body)}</div>`;
+  const blocks = isQuote ? [...tables.map(htmlTable), htmlMessage] : [htmlMessage, ...tables.map(htmlTable)];
+
+  const html = `<!doctype html><html><body style="margin:0;background:#F2F4F8;padding:24px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#11143A">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #E2E7EF">
+    <table role="presentation" style="width:100%;border-collapse:collapse;background:${kind.band}"><tr>
+      <td style="padding:12px 26px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#fff">${kind.label}</td>
+      <td style="padding:12px 26px;text-align:right;font-family:ui-monospace,monospace;font-size:12px;color:#fff;opacity:.85">${esc(enquiry.ref)}</td>
+    </tr></table>
+    <div style="padding:22px 26px 10px">
+      <div style="font-size:21px;font-weight:700;line-height:1.35">${esc(headline)}</div>
+      <div style="font-size:14px;color:#11143A;opacity:.65;margin-top:6px">${esc(byline)}</div>
     </div>
-    <div style="padding:22px 28px 8px">${sections.map(htmlSection).join('')}</div>
-    <div style="padding:16px 28px;background:#F7F9FC;border-top:1px solid #EEF1F6;font-size:13px;${MUTED}">
+    ${blocks.filter(Boolean).join('')}
+    <div style="margin-top:14px;padding:16px 26px;background:#F7F9FC;border-top:1px solid #EEF1F6;font-size:13px;color:#11143A;opacity:.7">
       Reply to this email to answer ${esc(enquiry.name)} directly.
     </div>
   </div>
-  <div style="max-width:640px;margin:12px auto 0;font-size:11px;color:${INK};opacity:.45;text-align:center">
+  <div style="max-width:600px;margin:12px auto 0;font-size:11px;color:#11143A;opacity:.45;text-align:center">
     Sent automatically by the ${esc(company.name || 'HNXT Logistics')} website
   </div>
 </body></html>`;
@@ -229,13 +149,14 @@ export async function notifyEnquiry(enquiry) {
   if (!to) return { sent: false, reason: 'no-recipient' };
 
   const { text, html } = buildBody(enquiry, company);
-  const lane = enquiry.origin && enquiry.destination ? ` (${enquiry.origin} → ${enquiry.destination})` : '';
 
   await mail.sendMail({
     from: process.env.SMTP_FROM || `"${company.name || 'Website'}" <${process.env.SMTP_USER}>`,
     to,
     replyTo: `"${enquiry.name}" <${enquiry.email}>`,
-    subject: `[${enquiry.ref}] ${enquiry.kind === 'quote' ? 'Quote request' : 'Enquiry'} — ${enquiry.name}${lane}`,
+    subject: enquiry.kind === 'quote'
+      ? `Quote request: ${laneOf(enquiry) || 'shipment'} — ${enquiry.name} [${enquiry.ref}]`
+      : `Contact message: ${enquiry.subject || 'general enquiry'} — ${enquiry.name} [${enquiry.ref}]`,
     text,
     html
   });
