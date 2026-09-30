@@ -25,6 +25,12 @@ const SCOPES = [
   { value: 'international', label: 'International', detail: 'Import or export' }
 ];
 
+/* Deliberately a little looser than the server's check, so the browser never
+   rejects an address the server would accept; it catches the common slips
+   (missing @, missing domain ending, stray spaces) as the visitor types. */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const EMAIL_ERROR = 'Please enter a valid email ID.';
+
 const STATE_OPTIONS = STATES.map((state) => ({ value: state, label: state }));
 
 export default function EnquiryForm({ kind = 'contact' }) {
@@ -79,6 +85,15 @@ export default function EnquiryForm({ kind = 'contact' }) {
     const { name, value } = event.target;
     setValues((current) => ({ ...current, [name]: value }));
     setErrors((current) => (current[name] ? { ...current, [name]: undefined } : current));
+  };
+
+  /* Checked when the visitor leaves the field, not on every keystroke, so
+     the message does not appear while an address is still being typed. */
+  const checkEmail = (event) => {
+    const email = event.target.value.trim();
+    if (email && !EMAIL_PATTERN.test(email)) {
+      setErrors((current) => ({ ...current, email: EMAIL_ERROR }));
+    }
   };
 
   async function onSubmit(event) {
@@ -250,7 +265,7 @@ export default function EnquiryForm({ kind = 'contact' }) {
         <legend className="eyebrow text-content/66">{isQuote ? 'Your details' : 'Contact details'}</legend>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field label="Your name" name="name" value={values.name} onChange={update} error={errors.name} autoComplete="name" required />
-          <Field label="Email" name="email" type="email" value={values.email} onChange={update} error={errors.email} autoComplete="email" required />
+          <Field label="Email" name="email" type="email" value={values.email} onChange={update} onBlur={checkEmail} error={errors.email} autoComplete="email" required />
           <Field label="Mobile number" name="phone" type="tel" value={values.phone} onChange={update} error={errors.phone} autoComplete="tel" required hint="So we can call you back about the shipment" />
           <Field label="Company" name="company" value={values.company} onChange={update} error={errors.company} autoComplete="organization" />
         </div>

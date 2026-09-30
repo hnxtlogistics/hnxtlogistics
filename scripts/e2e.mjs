@@ -38,7 +38,16 @@ try {
   await visitor.fill('#field-email', 'not-an-email');
   await visitor.click('button[type=submit]');
   await visitor.waitForTimeout(800);
-  check('invalid quote shows field errors', (await visitor.content()).includes('valid email address'));
+  check('invalid quote shows field errors', (await visitor.content()).includes('Please enter a valid email ID.'));
+
+  // Leaving the email field with a bad address warns before any submit.
+  await visitor.fill('#field-email', 'name@gmail');
+  await visitor.locator('#field-email').blur();
+  check('bad email is flagged on leaving the field',
+    (await visitor.textContent('#field-email-error'))?.trim() === 'Please enter a valid email ID.');
+  await visitor.fill('#field-email', 'name@gmail.com');
+  await visitor.locator('#field-email').blur();
+  check('warning clears once the email is fixed', (await visitor.locator('#field-email-error').count()) === 0);
 
   await visitor.fill('#field-name', 'Meridian Exports');
   await visitor.fill('#field-email', 'ops@meridian-exports.test');

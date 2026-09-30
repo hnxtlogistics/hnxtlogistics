@@ -93,7 +93,7 @@ export function Reveal({ children, delay = 0, className = '', as: Tag = 'div' })
 
 /** A labelled input with inline validation messaging. */
 export function Field({
-  label, name, type = 'text', value, onChange, error, hint,
+  label, name, type = 'text', value, onChange, onBlur, error, hint,
   required = false, rows, options, placeholder, autoComplete, className = ''
 }) {
   const id = `field-${name}`;
@@ -102,7 +102,7 @@ export function Field({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
 
   const shared = {
-    id, name, value, onChange, placeholder, required, autoComplete,
+    id, name, value, onChange, onBlur, placeholder, required, autoComplete,
     'aria-invalid': error ? 'true' : undefined,
     'aria-describedby': describedBy,
     className: `field-input${isPassword ? ' pr-12' : ''}`

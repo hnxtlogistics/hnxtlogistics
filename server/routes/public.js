@@ -32,7 +32,7 @@ const enquirySchema = z.object({
   kind: z.enum(['contact', 'quote']).default('contact'),
   scope: z.enum(['domestic', 'international', '']).default(''),
   name: trimmed(120).min(2, 'Enter your name.'),
-  email: trimmed(160).email('Enter a valid email address.'),
+  email: trimmed(160).email('Please enter a valid email ID.'),
   phone: trimmed(40).default(''),
   company: trimmed(160).default(''),
   subject: trimmed(200).default(''),
