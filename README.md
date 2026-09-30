@@ -189,6 +189,7 @@ Put a TLS-terminating reverse proxy in front of it.
 | `PUBLIC_URL` | recommended | Canonical origin used in the sitemap and structured data |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | yes | Sends enquiry email. See `.env.example` |
 | `SMTP_FROM`, `ENQUIRY_INBOX` | no | Sender, and recipient (defaults to the company email in `seed.js`) |
+| `ENQUIRY_FROM` | no | Address enquiries are sent from, shown as "Customer via HNXT Logistics" (defaults to `website@` the `SMTP_FROM` domain; must differ from `ENQUIRY_INBOX`) |
 
 ---
 

@@ -35,6 +35,29 @@ function getTransport() {
   return transport;
 }
 
+/* Without SMTP_FROM, send as the company's own address, never the SMTP
+   login: relay logins such as Brevo's xxx@smtp-brevo.com are not mailboxes
+   and are not covered by the domain's DKIM, so Gmail files them as spam. */
+function senderFor(company) {
+  if (process.env.SMTP_FROM) return process.env.SMTP_FROM;
+  const address = company.email || process.env.SMTP_USER;
+  return `"${company.name || 'Website'}" <${address}>`;
+}
+
+const addressOf = (header = '') => (header.match(/<([^>]+)>/)?.[1] || header).trim();
+const quoteName = (name) => `"${String(name).replace(/["\\\r\n]/g, '')}"`;
+
+/* Enquiries go to the company inbox, so sending them from that same address
+   makes every one arrive "from me to me" — which also reads as spoofing and
+   lands in junk. They come from a separate address on the same (Brevo
+   authenticated) domain instead, named after the customer, so the inbox
+   shows who wrote. Reply-To still points at the customer. */
+function enquirySender(enquiry, company) {
+  const domain = addressOf(senderFor(company)).split('@')[1];
+  const address = process.env.ENQUIRY_FROM || (domain ? `website@${domain}` : addressOf(senderFor(company)));
+  return `${quoteName(`${enquiry.name} via ${company.name || 'website'}`)} <${address}>`;
+}
+
 const SCOPE_LABEL = { domestic: 'Within India', international: 'International' };
 const MODE_LABEL = { ROAD: 'Road freight', AIR: 'Air freight', SEA: 'Sea freight', MULTI: 'Multi-modal' };
 
@@ -151,7 +174,7 @@ export async function notifyEnquiry(enquiry) {
   const { text, html } = buildBody(enquiry, company);
 
   await mail.sendMail({
-    from: process.env.SMTP_FROM || `"${company.name || 'Website'}" <${process.env.SMTP_USER}>`,
+    from: enquirySender(enquiry, company),
     to,
     replyTo: `"${enquiry.name}" <${enquiry.email}>`,
     subject: enquiry.kind === 'quote'
@@ -169,7 +192,7 @@ export async function sendTestEmail(to) {
   const company = getContent('company', {});
   try {
     await mail.sendMail({
-      from: process.env.SMTP_FROM || `"${company.name || 'Website'}" <${process.env.SMTP_USER}>`,
+      from: senderFor(company),
       to,
       subject: 'Test email from your website',
       text: 'Email notifications are working. New enquiries from the website will arrive at this address.',
