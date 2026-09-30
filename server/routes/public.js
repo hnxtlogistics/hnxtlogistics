@@ -39,6 +39,9 @@ const enquirySchema = z.object({
   message: trimmed(4000).default(''),
   origin: trimmed(120).default(''),
   destination: trimmed(120).default(''),
+  /* Only used to lay out the notification email the way the form looked. */
+  originState: trimmed(80).default(''),
+  destinationState: trimmed(80).default(''),
   mode: trimmed(40).default(''),
   weight: trimmed(60).default(''),
   dimensions: trimmed(120).default(''),
