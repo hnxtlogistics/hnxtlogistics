@@ -86,6 +86,7 @@ export default function ContactPopup({ waitFor = false }) {
   if (!open) return null;
 
   const phoneHref = company.phone ? `tel:${company.phone.replace(/\s/g, '')}` : null;
+  const emails = [...new Set([company.email, company.secondaryEmail].filter(Boolean))];
   const waHref = company.whatsapp ? `https://wa.me/${company.whatsapp.replace(/\D/g, '')}` : null;
 
   return (
@@ -155,17 +156,19 @@ export default function ContactPopup({ waitFor = false }) {
               </dd>
             </div>
           )}
-          {(company.secondaryEmail || company.email) && (
+          {emails.length > 0 && (
             <div className="bg-surface px-4 py-3.5">
               <dt className="eyebrow text-content/70">Email</dt>
-              <dd className="mt-1.5">
-                <a
-                  href={`mailto:${company.secondaryEmail || company.email}`}
-                  className="block break-all text-[1.0625rem] font-semibold leading-snug tracking-tight text-content underline decoration-accent-500 decoration-2 underline-offset-[5px] transition-colors hover:text-accent-600 sm:text-lg"
-                >
-                  {company.secondaryEmail || company.email}
-                </a>
-              </dd>
+              {emails.map((email) => (
+                <dd key={email} className="mt-1.5">
+                  <a
+                    href={`mailto:${email}`}
+                    className="block break-all text-[1.0625rem] font-semibold leading-snug tracking-tight text-content underline decoration-accent-500 decoration-2 underline-offset-[5px] transition-colors hover:text-accent-600 sm:text-lg"
+                  >
+                    {email}
+                  </a>
+                </dd>
+              ))}
             </div>
           )}
           {company.hours && (
